@@ -18,15 +18,15 @@ migrate:
 
 # Сборка Docker образов
 docker-build:
-	docker-compose build
+	docker compose build
 
 # Запуск Docker контейнеров
 docker-up:
-	docker-compose up -d
+	docker compose up -d
 
 # Остановка Docker контейнеров
 docker-down:
-	docker-compose down
+	docker compose down
 
 # Установка зависимостей для разработки
 install-dev-deps:

@@ -20,7 +20,10 @@ DB_URL="postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?ss
 
 echo "Running migrations on ${DB_URL}..."
 
-# Запускаем миграции
-migrate -source file://migrations -database "${DB_URL}" up
+# Выводим список миграций
+ls -la migrations/
+
+# Запускаем миграции с явным указанием пути
+migrate -path migrations -database "${DB_URL}" up
 
 echo "Migrations completed successfully!" 
