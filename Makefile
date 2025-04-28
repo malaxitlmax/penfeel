@@ -22,16 +22,20 @@ migrate:
 	./scripts/run_migrations.sh
 
 # Сборка Docker образов
-docker-build:
+build:
 	docker compose build
 
 # Запуск Docker контейнеров
-docker-up:
+up:
 	docker compose up -d
 
 # Остановка Docker контейнеров
-docker-down:
+down:
 	docker compose down
+
+# Просмотр логов
+logs:
+	docker compose logs -f
 
 # Установка зависимостей для разработки
 install-dev-deps:
