@@ -15,6 +15,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
+	pb "github.com/malaxitlmax/penfeel/api/proto"
 )
 
 func main() {
@@ -48,8 +50,7 @@ func main() {
 
 	// Регистрируем сервис авторизации
 	authGRPCServer := auth.NewGRPCServer(authService)
-	// TODO: Раскомментировать после генерации proto
-	// pb.RegisterAuthServiceServer(grpcServer, authGRPCServer)
+	pb.RegisterAuthServiceServer(grpcServer, authGRPCServer)
 
 	// Включаем reflection для отладки с помощью grpcurl
 	reflection.Register(grpcServer)
