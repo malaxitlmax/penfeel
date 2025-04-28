@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: penfeel-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: penfeel
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.auth
+    container_name: penfeel-auth
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: penfeel
+      DB_SSLMODE: disable
+      GRPC_PORT: 9090
+      JWT_SECRET: "your-auth-secret-key-change-in-production"
+      JWT_REFRESH_SECRET: "your-refresh-secret-key-change-in-production"
+    ports:
+      - "9090:9090"
+
+volumes:
+  postgres_data: 
