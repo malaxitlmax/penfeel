@@ -1,4 +1,4 @@
-.PHONY: proto build run-auth migrate docker-build docker-up docker-down
+.PHONY: proto build run-auth run-api-gateway migrate docker-build docker-up docker-down
 
 # Генерация proto файлов
 proto:
@@ -7,10 +7,15 @@ proto:
 # Сборка всех сервисов
 build: proto
 	go build -o bin/auth-service cmd/auth/main.go
+	go build -o bin/api-gateway cmd/api-gateway/main.go
 
 # Запуск сервиса авторизации
 run-auth: build
 	./bin/auth-service
+
+# Запуск API Gateway
+run-api-gateway: build
+	./bin/api-gateway
 
 # Запуск миграций
 migrate:
