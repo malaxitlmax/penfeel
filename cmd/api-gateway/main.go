@@ -23,9 +23,15 @@ func main() {
 	// Загружаем конфигурацию
 	cfg := config.LoadConfig()
 
+	// Получаем хост auth-service из переменной окружения или используем localhost по умолчанию
+	authServiceHost := os.Getenv("AUTH_SERVICE_HOST")
+	if authServiceHost == "" {
+		authServiceHost = "localhost"
+	}
+
 	// Устанавливаем соединение с auth service через gRPC
 	authConn, err := grpc.Dial(
-		fmt.Sprintf("localhost:%d", cfg.Server.GRPCPort),
+		fmt.Sprintf("%s:%d", authServiceHost, cfg.Server.GRPCPort),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {

@@ -37,5 +37,19 @@ services:
     ports:
       - "9090:9090"
 
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.api-gateway
+    container_name: penfeel-api-gateway
+    depends_on:
+      - auth-service
+    environment:
+      SERVER_PORT: 8080
+      SERVER_GRPC_PORT: 9090
+      AUTH_SERVICE_HOST: auth-service
+    ports:
+      - "8080:8080"
+
 volumes:
   postgres_data: 
