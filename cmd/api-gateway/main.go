@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -18,6 +20,31 @@ import (
 
 	pb "github.com/malaxitlmax/penfeel/api/proto"
 )
+
+// serveReactApp обрабатывает запросы к React-приложению и обеспечивает корректную работу
+// при обновлении страницы для маршрутов клиентского приложения
+func serveReactApp(staticPath string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		path := c.Request.URL.Path
+
+		// Проверяем запрос к API
+		if strings.HasPrefix(path, "/auth") || strings.HasPrefix(path, "/api") {
+			c.Next()
+			return
+		}
+
+		// Проверяем, существует ли файл
+		filePath := filepath.Join(staticPath, path)
+		if _, err := os.Stat(filePath); err == nil {
+			// Если файл существует, отдаем его
+			c.File(filePath)
+			return
+		}
+
+		// Если файл не найден, отдаем index.html (для работы client-side routing)
+		c.File(filepath.Join(staticPath, "index.html"))
+	}
+}
 
 func main() {
 	// Загружаем конфигурацию
@@ -48,6 +75,13 @@ func main() {
 	// Регистрируем маршруты для аутентификации
 	authHandler := apigateway.NewHandler(authClient)
 	authMiddleware := apigateway.AuthMiddleware(authClient)
+
+	// Путь к собранному React-приложению
+	staticPath := "./client/dist"
+
+	// Обслуживание статических файлов
+	router.Use(serveReactApp(staticPath))
+	router.Static("/assets", filepath.Join(staticPath, "assets"))
 
 	// Публичные маршруты
 	authRoutes := router.Group("/auth")
@@ -84,6 +118,7 @@ func main() {
 	// Запуск сервера в горутине
 	go func() {
 		log.Printf("API Gateway starting on port %d", cfg.Server.Port)
+		log.Printf("Serving React app from %s", staticPath)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to start server: %v", err)
 		}

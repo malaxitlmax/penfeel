@@ -1,4 +1,20 @@
-FROM golang:1.23.3-alpine AS builder
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app/client
+
+# Копируем package.json и package-lock.json
+COPY client/package*.json ./
+
+# Устанавливаем зависимости
+RUN npm install
+
+# Копируем исходный код React-приложения
+COPY client/ ./
+
+# Собираем React-приложение
+RUN npm run build
+
+FROM golang:1.23.3-alpine AS backend-builder
 
 WORKDIR /app
 
@@ -27,7 +43,10 @@ FROM alpine:latest
 WORKDIR /app
 
 # Копируем бинарный файл из предыдущего этапа
-COPY --from=builder /bin/api-gateway /app/api-gateway
+COPY --from=backend-builder /bin/api-gateway /app/api-gateway
+
+# Копируем собранное React-приложение
+COPY --from=frontend-builder /app/client/dist /app/client/dist
 
 # Устанавливаем зависимости для рантайма
 RUN apk --no-cache add ca-certificates

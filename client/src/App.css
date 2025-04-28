@@ -1,0 +1,20 @@
+.app {
+  min-height: 100vh;
+}
+
+.home-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.home-page h1 {
+  color: var(--primary-color);
+  margin-bottom: 16px;
+}
+
+.home-page p {
+  font-size: 18px;
+  color: var(--text-color);
+} 

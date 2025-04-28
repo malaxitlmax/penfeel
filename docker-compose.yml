@@ -50,6 +50,8 @@ services:
       AUTH_SERVICE_HOST: auth-service
     ports:
       - "8080:8080"
+    volumes:
+      - ./client/src:/app/client/src:ro  # Только для разработки (опционально)
 
 volumes:
   postgres_data: 
