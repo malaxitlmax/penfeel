@@ -37,3 +37,10 @@ install-dev-deps:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest 
+
+npm-install:
+	docker exec -it penfeel-api-gateway sh -c "cd client && npm install"
+
+npm-build:
+	docker exec -it penfeel-api-gateway sh -c "cd client && npm run build"
+

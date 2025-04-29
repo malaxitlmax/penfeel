@@ -8,11 +8,11 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/malaxitlmax/penfeel/config"
 	apigateway "github.com/malaxitlmax/penfeel/internal/api-gateway/auth"
 	"google.golang.org/grpc"
@@ -21,32 +21,11 @@ import (
 	pb "github.com/malaxitlmax/penfeel/api/proto"
 )
 
-// serveReactApp обрабатывает запросы к React-приложению и обеспечивает корректную работу
-// при обновлении страницы для маршрутов клиентского приложения
-func serveReactApp(staticPath string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		path := c.Request.URL.Path
-
-		// Проверяем запрос к API
-		if strings.HasPrefix(path, "/auth") || strings.HasPrefix(path, "/api") {
-			c.Next()
-			return
-		}
-
-		// Проверяем, существует ли файл
-		filePath := filepath.Join(staticPath, path)
-		if _, err := os.Stat(filePath); err == nil {
-			// Если файл существует, отдаем его
-			c.File(filePath)
-			return
-		}
-
-		// Если файл не найден, отдаем index.html (для работы client-side routing)
-		c.File(filepath.Join(staticPath, "index.html"))
-	}
-}
-
 func main() {
+	godotenv.Load()
+	isDev := os.Getenv("ENV") == "dev"
+	_ = isDev
+
 	// Загружаем конфигурацию
 	cfg := config.LoadConfig()
 
@@ -80,7 +59,7 @@ func main() {
 	staticPath := "./client/dist"
 
 	// Обслуживание статических файлов
-	router.Use(serveReactApp(staticPath))
+	router.Static("/", staticPath)
 	router.Static("/assets", filepath.Join(staticPath, "assets"))
 
 	// Публичные маршруты

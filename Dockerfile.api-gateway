@@ -1,33 +1,19 @@
-FROM node:20-alpine AS frontend-builder
-
-WORKDIR /app/client
-
-# Копируем package.json и package-lock.json
-COPY client/package*.json ./
-
-# Устанавливаем зависимости
-RUN npm install
-
-# Копируем исходный код React-приложения
-COPY client/ ./
-
-# Собираем React-приложение
-RUN npm run build
-
-FROM golang:1.23.3-alpine AS backend-builder
+FROM golang:1.23.3-alpine
 
 WORKDIR /app
-
-# Устанавливаем зависимости
-COPY go.mod go.sum ./
-RUN go mod download
 
 # Установка protoc и плагинов
 RUN apk add --no-cache protobuf
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+RUN go install github.com/air-verse/air@latest
+
+# Устанавливаем зависимости
+COPY go.mod go.sum ./
+RUN go mod download
 
 # Копируем исходный код
+# TODO: Убрать client
 COPY . .
 
 # Генерируем proto файлы напрямую
@@ -36,23 +22,10 @@ RUN protoc --go_out=. --go_opt=paths=source_relative \
     api/proto/auth.proto
 
 # Компилируем приложение
-RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/api-gateway ./cmd/api-gateway
-
-FROM alpine:latest
-
-WORKDIR /app
-
-# Копируем бинарный файл из предыдущего этапа
-COPY --from=backend-builder /bin/api-gateway /app/api-gateway
-
-# Копируем собранное React-приложение
-COPY --from=frontend-builder /app/client/dist /app/client/dist
-
-# Устанавливаем зависимости для рантайма
-RUN apk --no-cache add ca-certificates
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/api-gateway ./cmd/api-gateway
 
 # Указываем порт для HTTP
 EXPOSE 8080
 
 # Запускаем приложение
-CMD ["./api-gateway"]
+CMD ["air", "--build.cmd", "go build -o bin/api-gateway cmd/api-gateway/main.go", "--build.bin", "./bin/api-gateway"]
