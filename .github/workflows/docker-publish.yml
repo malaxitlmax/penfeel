@@ -7,7 +7,7 @@ name: Docker
 
 on:
   push:
-    branches: [ "main" ]
+    # Removed branches trigger to only run on tag creation
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
 env:
