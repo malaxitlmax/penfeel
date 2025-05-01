@@ -36,6 +36,7 @@ services:
       JWT_REFRESH_SECRET: "your-refresh-secret-key-change-in-production"
     ports:
       - "9090:9090"
+    command: ["air", "-c", "auth.air.toml"]  
 
   api-gateway:
     build:
@@ -50,13 +51,8 @@ services:
       AUTH_SERVICE_HOST: auth-service
     ports:
       - "8080:8080"
-    # volumes:
-    #   - ./internal:/app/internal
-    #   - ./pkg:/app/pkg
-    #   - ./config:/app/config
-    #   - ./cmd:/app/cmd
-    #   - ./go.mod:/app/go.mod
-    #   - ./go.sum:/app/go.sum
-      
+    volumes:
+      - ./:/app
+    command: ["air", "-c", "api-gateway.air.toml"]      
 volumes:
   postgres_data: 

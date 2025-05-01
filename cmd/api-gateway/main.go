@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
@@ -58,10 +57,6 @@ func main() {
 	// Путь к собранному React-приложению
 	staticPath := "./client/dist"
 
-	// Обслуживание статических файлов
-	router.Static("/", staticPath)
-	router.Static("/assets", filepath.Join(staticPath, "assets"))
-
 	// Публичные маршруты
 	authRoutes := router.Group("/auth")
 	{
@@ -87,6 +82,10 @@ func main() {
 			})
 		})
 	}
+
+	// TODO: включать на проде
+	// Обслуживание статических файлов (должно быть последним)
+	// router.Static("/", staticPath)
 
 	// Настройка и запуск HTTP сервера
 	server := &http.Server{

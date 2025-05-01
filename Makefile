@@ -44,3 +44,5 @@ npm-install:
 npm-build:
 	docker exec -it penfeel-api-gateway sh -c "cd client && npm run build"
 
+build-base:
+	docker build -t penfeel-base -f Dockerfile.base .

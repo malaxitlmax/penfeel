@@ -2,47 +2,60 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
 
-interface LoginCredentials {
+interface RegisterCredentials {
+  name: string;
   email: string;
   password: string;
+  confirmPassword: string;
 }
 
-interface LoginResponse {
-  token: string;
+interface RegisterResponse {
   userId: string;
+  message: string;
 }
 
-export default function Login() {
-  const [credentials, setCredentials] = useState<LoginCredentials>({
+export default function Register() {
+  const [credentials, setCredentials] = useState<RegisterCredentials>({
+    name: '',
     email: '',
     password: '',
+    confirmPassword: '',
   });
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const loginMutation = useMutation<LoginResponse, Error, LoginCredentials>({
+  const registerMutation = useMutation<RegisterResponse, Error, RegisterCredentials>({
     mutationFn: async (credentials) => {
-      const response = await fetch('http://localhost:8080/login', {
+      // Client-side validation
+      if (credentials.password !== credentials.confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
+
+      // Create registration data without confirmPassword
+      const registrationData = {
+        name: credentials.name,
+        email: credentials.email,
+        password: credentials.password,
+      };
+
+      const response = await fetch('http://localhost:8080/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(credentials),
+        body: JSON.stringify(registrationData),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Login failed');
+        throw new Error(errorData.message || 'Registration failed');
       }
 
       return response.json();
     },
-    onSuccess: (data) => {
-      // Store token in localStorage
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('userId', data.userId);
-      // Redirect to dashboard or home page
-      navigate('/');
+    onSuccess: () => {
+      // Redirect to login page after successful registration
+      navigate('/login');
     },
     onError: (error) => {
       setError(error.message);
@@ -52,7 +65,7 @@ export default function Login() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    loginMutation.mutate(credentials);
+    registerMutation.mutate(credentials);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,7 +79,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-md">
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">Sign In</h2>
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">Create Account</h2>
         
         {error && (
           <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -75,6 +88,22 @@ export default function Login() {
         )}
         
         <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              Full Name
+            </label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              required
+              value={credentials.name}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="John Doe"
+            />
+          </div>
+          
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email
@@ -91,7 +120,7 @@ export default function Login() {
             />
           </div>
           
-          <div className="mb-6">
+          <div className="mb-4">
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               Password
             </label>
@@ -104,22 +133,39 @@ export default function Login() {
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="••••••••"
+              minLength={8}
+            />
+          </div>
+          
+          <div className="mb-6">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              Confirm Password
+            </label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              required
+              value={credentials.confirmPassword}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="••••••••"
             />
           </div>
           
           <button
             type="submit"
-            disabled={loginMutation.isPending}
+            disabled={registerMutation.isPending}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
           >
-            {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
+            {registerMutation.isPending ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
         
         <div className="mt-4 text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-blue-600 hover:underline">
-            Create account
+          Already have an account?{' '}
+          <Link to="/login" className="text-blue-600 hover:underline">
+            Sign in
           </Link>
         </div>
       </div>

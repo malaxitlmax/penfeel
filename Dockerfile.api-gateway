@@ -1,31 +1,7 @@
-FROM golang:1.23.3-alpine
-
-WORKDIR /app
-
-# Установка protoc и плагинов
-RUN apk add --no-cache protobuf
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-RUN go install github.com/air-verse/air@latest
-
-# Устанавливаем зависимости
-COPY go.mod go.sum ./
-RUN go mod download
-
-# Копируем исходный код
-# TODO: Убрать client
-COPY . .
-
-# Генерируем proto файлы напрямую
-RUN protoc --go_out=. --go_opt=paths=source_relative \
-    --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-    api/proto/auth.proto
-
-# Компилируем приложение
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/api-gateway ./cmd/api-gateway
+FROM penfeel-base
 
 # Указываем порт для HTTP
 EXPOSE 8080
 
 # Запускаем приложение
-CMD ["air", "--build.cmd", "go build -o bin/api-gateway cmd/api-gateway/main.go", "--build.bin", "./bin/api-gateway"]
+CMD ["air", "-c", "api-gateway.air.toml"]
