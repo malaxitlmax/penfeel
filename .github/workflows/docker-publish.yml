@@ -18,7 +18,6 @@ env:
 
 jobs:
   build-base:
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
