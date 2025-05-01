@@ -1,4 +1,4 @@
-FROM penfeel-base
+FROM ghcr.io/malaxitlmax/penfeel:penfeel-base
 
 # Указываем порт для gRPC
 EXPOSE 9090
