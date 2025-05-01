@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_URL } from '@/App';
 
 interface RegisterCredentials {
-  name: string;
+  username: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -16,7 +17,7 @@ interface RegisterResponse {
 
 export default function Register() {
   const [credentials, setCredentials] = useState<RegisterCredentials>({
-    name: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -33,12 +34,12 @@ export default function Register() {
 
       // Create registration data without confirmPassword
       const registrationData = {
-        name: credentials.name,
+        username: credentials.username,
         email: credentials.email,
         password: credentials.password,
       };
 
-      const response = await fetch('http://localhost:8080/register', {
+      const response = await fetch(API_URL + '/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,18 +90,18 @@ export default function Register() {
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+              Username
             </label>
             <input
-              id="name"
-              name="name"
+              id="username"
+              name="username"
               type="text"
               required
-              value={credentials.name}
+              value={credentials.username}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="John Doe"
+              placeholder="johndoe"
             />
           </div>
           

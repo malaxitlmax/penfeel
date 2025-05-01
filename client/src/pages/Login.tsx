@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_URL } from '@/App';
 
 interface LoginCredentials {
   email: string;
@@ -22,7 +23,7 @@ export default function Login() {
 
   const loginMutation = useMutation<LoginResponse, Error, LoginCredentials>({
     mutationFn: async (credentials) => {
-      const response = await fetch('http://localhost:8080/login', {
+      const response = await fetch(API_URL + '/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

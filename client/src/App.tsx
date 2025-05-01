@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import Login from './pages/Login'
 import Register from './pages/Register'
 
+export const API_URL = import.meta.env.MODE === "development" ? "http://localhost:8080/api/v1" : "/api/v1"
+
 function App() {
   // Simple auth check - if token exists, consider user logged in
   const isAuthenticated = !!localStorage.getItem('token')

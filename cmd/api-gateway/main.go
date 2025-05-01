@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/malaxitlmax/penfeel/config"
@@ -24,6 +25,10 @@ func main() {
 	godotenv.Load()
 	isDev := os.Getenv("ENV") == "dev"
 	_ = isDev
+
+	// Настраиваем логирование
+	log.SetOutput(os.Stdout)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// Загружаем конфигурацию
 	cfg := config.LoadConfig()
@@ -50,6 +55,15 @@ func main() {
 	// Создаем роутер gin
 	router := gin.Default()
 
+	// Configure CORS middleware
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowAllOrigins = true // For development; restrict in production
+	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	corsConfig.ExposeHeaders = []string{"Content-Length"}
+	corsConfig.AllowCredentials = true
+	router.Use(cors.New(corsConfig))
+
 	// Регистрируем маршруты для аутентификации
 	authHandler := apigateway.NewHandler(authClient)
 	authMiddleware := apigateway.AuthMiddleware(authClient)
@@ -58,7 +72,7 @@ func main() {
 	staticPath := "./client/dist"
 
 	// Публичные маршруты
-	authRoutes := router.Group("/auth")
+	authRoutes := router.Group("/api/v1/auth")
 	{
 		authRoutes.POST("/register", authHandler.Register)
 		authRoutes.POST("/login", authHandler.Login)
@@ -66,7 +80,7 @@ func main() {
 	}
 
 	// Защищенные маршруты (пример)
-	protectedRoutes := router.Group("/api")
+	protectedRoutes := router.Group("/api/v1")
 	protectedRoutes.Use(authMiddleware)
 	{
 		// Пример защищенного маршрута

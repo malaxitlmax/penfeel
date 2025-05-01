@@ -36,6 +36,8 @@ services:
       JWT_REFRESH_SECRET: "your-refresh-secret-key-change-in-production"
     ports:
       - "9090:9090"
+    volumes:
+    - ./:/app
     command: ["air", "-c", "auth.air.toml"]  
 
   api-gateway:
