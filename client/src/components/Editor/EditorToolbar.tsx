@@ -1,5 +1,6 @@
 import { EditorView } from "prosemirror-view";
 import { useEditorEventCallback } from "@handlewithcare/react-prosemirror";
+import { toggleMark, } from "prosemirror-commands"
 import { EditorState, Transaction } from "prosemirror-state";
 import "./ToolbarStyle.css";
 
