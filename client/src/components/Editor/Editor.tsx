@@ -32,17 +32,19 @@ export default function Editor() {
   );
 
   return (
-    <div className="editor-container">
-      <div className="editor-wrapper">
-        <ProseMirror
-          state={editorState}
-          dispatchTransaction={(tr) => {
-            setEditorState((s) => s.apply(tr));
-          }}
-        >
-          <EditorToolbar />
-          <ProseMirrorDoc />
-        </ProseMirror>
+    <div className="flex-1 p-6 overflow-auto flex justify-center">
+      <div className="editor-container w-full max-w-3xl">
+        <div className="editor-wrapper">
+          <ProseMirror
+            state={editorState}
+            dispatchTransaction={(tr) => {
+              setEditorState((s) => s.apply(tr));
+            }}
+          >
+            <EditorToolbar />
+            <ProseMirrorDoc />
+          </ProseMirror>
+        </div>
       </div>
     </div>
   );
