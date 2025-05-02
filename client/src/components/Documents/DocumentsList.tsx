@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { FiPlus, FiFile } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiPlus, FiFile, FiAlertCircle } from 'react-icons/fi';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_URL } from '@/App';
 
@@ -13,12 +13,36 @@ interface Document {
     updated_at: string;
 }
 
+// Error interface to capture detailed backend errors
+interface DetailedError {
+    message: string;
+    details?: string;
+    debug_info?: string;
+}
+
 function DocumentsList() {
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<DetailedError | null>(null);
     const queryClient = useQueryClient();
 
+    // Helper to extract detailed error from API response
+    const extractErrorDetails = async (response: Response, defaultMsg: string): Promise<DetailedError> => {
+        try {
+            const errorData = await response.json();
+            return {
+                message: errorData.error || defaultMsg,
+                details: errorData.details,
+                debug_info: errorData.debug_info
+            };
+        } catch {
+            // If parsing JSON fails, use status text
+            return {
+                message: `${defaultMsg}: ${response.statusText || response.status}`
+            };
+        }
+    };
+
     // Fetch documents query
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, error: queryError } = useQuery<Document[]>({
         queryKey: ['documents'],
         queryFn: async () => {
             const token = localStorage.getItem('token');
@@ -35,14 +59,9 @@ function DocumentsList() {
                     return [];
                 }
                 
-                // For other errors, try to get detailed error message from response
-                try {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || `Failed to fetch documents: ${response.status}`);
-                } catch {
-                    // If parsing JSON fails, use status text
-                    throw new Error(`Failed to fetch documents: ${response.statusText || response.status}`);
-                }
+                // For other errors, get detailed error message
+                const error = await extractErrorDetails(response, 'Failed to fetch documents');
+                throw new Error(error.message);
             }
             
             const result = await response.json();
@@ -58,6 +77,13 @@ function DocumentsList() {
             return failureCount < 3;
         }
     });
+
+    // Update error state when query errors occur
+    useEffect(() => {
+        if (queryError) {
+            setError({ message: queryError.message });
+        }
+    }, [queryError]);
 
     // Create document mutation
     const createDocumentMutation = useMutation({
@@ -77,24 +103,26 @@ function DocumentsList() {
             });
             
             if (!response.ok) {
-                // Try to get detailed error message from response
-                try {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || `Failed to create document: ${response.status}`);
-                } catch {
-                    // If parsing JSON fails, use status text
-                    throw new Error(`Failed to create document: ${response.statusText || response.status}`);
-                }
+                // Get detailed error info from response
+                const errorDetails = await extractErrorDetails(response, 'Failed to create document');
+                throw errorDetails;
             }
             
             return response.json();
         },
         onSuccess: () => {
+            // Clear any previous errors
+            setError(null);
             // Invalidate the documents query to trigger a refetch
             queryClient.invalidateQueries({ queryKey: ['documents'] });
         },
-        onError: (error: Error) => {
-            setError(error.message);
+        onError: (err: unknown) => {
+            // Handle the detailed error object
+            if (typeof err === 'object' && err !== null) {
+                setError(err as DetailedError);
+            } else {
+                setError({ message: String(err) });
+            }
         }
     });
 
@@ -121,7 +149,15 @@ function DocumentsList() {
                         <span className="text-gray-500">Loading documents...</span>
                     </div>
                 ) : error ? (
-                    <div className="text-red-500 text-sm py-2">{error}</div>
+                    <div className="text-red-500 text-sm py-2 space-y-1">
+                        <div className="flex items-start">
+                            <FiAlertCircle className="mr-1 mt-0.5 flex-shrink-0" />
+                            <span>{error.message}</span>
+                        </div>
+                        {error.details && (
+                            <div className="text-xs text-red-400 ml-5">{error.details}</div>
+                        )}
+                    </div>
                 ) : !data || data.length === 0 ? (
                     <div className="text-gray-500 text-sm py-2">
                         No documents found. Create your first document!

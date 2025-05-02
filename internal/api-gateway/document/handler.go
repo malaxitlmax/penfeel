@@ -36,7 +36,7 @@ func (h *Handler) GetDocuments(c *gin.Context) {
 	if userID == "" {
 		// Если ID не получен из токена, пробуем получить из query-параметров
 		if err := c.ShouldBindQuery(&req); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request: user_id is required"})
 			return
 		}
 		userID = req.UserID
@@ -44,7 +44,7 @@ func (h *Handler) GetDocuments(c *gin.Context) {
 
 	// Проверяем, что ID пользователя - валидный UUID
 	if _, err := uuid.Parse(userID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user_id format"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user_id format", "details": "User ID must be a valid UUID"})
 		return
 	}
 
@@ -56,15 +56,24 @@ func (h *Handler) GetDocuments(c *gin.Context) {
 	if err != nil {
 		// Проверяем ошибку на наличие "connection refused"
 		if strings.Contains(err.Error(), "connection refused") {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "document service is unavailable"})
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"error":   "Document service is unavailable - please try again later",
+				"details": err.Error(),
+			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to fetch documents",
+			"details": err.Error(),
+		})
 		return
 	}
 
 	if !res.Success {
-		c.JSON(http.StatusBadRequest, gin.H{"error": res.Error})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Document service rejected the request",
+			"details": res.Error,
+		})
 		return
 	}
 
@@ -78,14 +87,14 @@ func (h *Handler) GetDocuments(c *gin.Context) {
 func (h *Handler) GetDocument(c *gin.Context) {
 	documentID := c.Param("id")
 	if documentID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "document id is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing document ID", "details": "Document ID is required in the path"})
 		return
 	}
 
 	// Получаем ID пользователя из токена
 	userID := c.GetString("user_id")
 	if userID == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required", "details": "Valid authentication token is required"})
 		return
 	}
 
@@ -98,15 +107,32 @@ func (h *Handler) GetDocument(c *gin.Context) {
 	if err != nil {
 		// Проверяем ошибку на наличие "connection refused"
 		if strings.Contains(err.Error(), "connection refused") {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "document service is unavailable"})
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"error":   "Document service is unavailable - please try again later",
+				"details": err.Error(),
+			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "Not Found") {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error":      "Document not found",
+				"details":    "The requested document doesn't exist or you don't have permission to access it",
+				"debug_info": err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to fetch document",
+			"details": err.Error(),
+		})
 		return
 	}
 
 	if !res.Success {
-		c.JSON(http.StatusBadRequest, gin.H{"error": res.Error})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Document service rejected the request",
+			"details": res.Error,
+		})
 		return
 	}
 
@@ -126,14 +152,14 @@ type CreateDocumentRequest struct {
 func (h *Handler) CreateDocument(c *gin.Context) {
 	var req CreateDocumentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data: " + err.Error()})
 		return
 	}
 
 	// Получаем ID пользователя из токена
 	userID := c.GetString("user_id")
 	if userID == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required: user ID missing from token"})
 		return
 	}
 
@@ -146,15 +172,32 @@ func (h *Handler) CreateDocument(c *gin.Context) {
 
 	if err != nil {
 		if strings.Contains(err.Error(), "connection refused") {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "document service is unavailable"})
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"error":   "Document service is unavailable - please try again later",
+				"details": err.Error(),
+			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "Not Found") {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error":      "Failed to create document: resource not found",
+				"details":    "This could be due to missing user permissions or service configuration issues",
+				"debug_info": err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to create document",
+			"details": err.Error(),
+		})
 		return
 	}
 
 	if !res.Success {
-		c.JSON(http.StatusBadRequest, gin.H{"error": res.Error})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Document service rejected the request",
+			"details": res.Error,
+		})
 		return
 	}
 
@@ -174,20 +217,20 @@ type UpdateDocumentRequest struct {
 func (h *Handler) UpdateDocument(c *gin.Context) {
 	documentID := c.Param("id")
 	if documentID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "document id is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing document ID", "details": "Document ID is required in the path"})
 		return
 	}
 
 	var req UpdateDocumentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data", "details": err.Error()})
 		return
 	}
 
 	// Получаем ID пользователя из токена
 	userID := c.GetString("user_id")
 	if userID == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required", "details": "Valid authentication token is required"})
 		return
 	}
 
@@ -201,15 +244,32 @@ func (h *Handler) UpdateDocument(c *gin.Context) {
 
 	if err != nil {
 		if strings.Contains(err.Error(), "connection refused") {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "document service is unavailable"})
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"error":   "Document service is unavailable - please try again later",
+				"details": err.Error(),
+			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "Not Found") {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error":      "Document not found",
+				"details":    "The requested document doesn't exist or you don't have permission to modify it",
+				"debug_info": err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to update document",
+			"details": err.Error(),
+		})
 		return
 	}
 
 	if !res.Success {
-		c.JSON(http.StatusBadRequest, gin.H{"error": res.Error})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Document service rejected the update request",
+			"details": res.Error,
+		})
 		return
 	}
 
@@ -223,14 +283,14 @@ func (h *Handler) UpdateDocument(c *gin.Context) {
 func (h *Handler) DeleteDocument(c *gin.Context) {
 	documentID := c.Param("id")
 	if documentID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "document id is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing document ID", "details": "Document ID is required in the path"})
 		return
 	}
 
 	// Получаем ID пользователя из токена
 	userID := c.GetString("user_id")
 	if userID == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required", "details": "Valid authentication token is required"})
 		return
 	}
 
@@ -242,26 +302,44 @@ func (h *Handler) DeleteDocument(c *gin.Context) {
 
 	if err != nil {
 		if strings.Contains(err.Error(), "connection refused") {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "document service is unavailable"})
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"error":   "Document service is unavailable - please try again later",
+				"details": err.Error(),
+			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "Not Found") {
+			c.JSON(http.StatusNotFound, gin.H{
+				"error":      "Document not found",
+				"details":    "The requested document doesn't exist or you don't have permission to delete it",
+				"debug_info": err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to delete document",
+			"details": err.Error(),
+		})
 		return
 	}
 
 	if !res.Success {
-		c.JSON(http.StatusBadRequest, gin.H{"error": res.Error})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Document service rejected the deletion request",
+			"details": res.Error,
+		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
+		"message": "Document successfully deleted",
 	})
 }
 
 // RegisterRoutes регистрирует маршруты для документов
 func (h *Handler) RegisterRoutes(r *gin.Engine, middleware ...gin.HandlerFunc) {
-	documents := r.Group("/api/documents")
+	documents := r.Group("/api/v1/documents")
 	documents.Use(middleware...)
 
 	documents.GET("", h.GetDocuments)
