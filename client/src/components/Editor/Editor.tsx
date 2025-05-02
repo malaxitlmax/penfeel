@@ -14,6 +14,8 @@ import "./EditorStyle.css";
 import { keymap } from "prosemirror-keymap";
 import { baseKeymap } from "prosemirror-commands";
 import { useDocumentContext } from "@/context/DocumentContext";
+import { history, redo, undo } from "prosemirror-history";
+import { collab } from "prosemirror-collab";
 import debounce from "lodash.debounce";
 
 // Create an extended schema with list support
@@ -22,16 +24,20 @@ const mySchema = new Schema({
   marks: schema.spec.marks
 });
 
+const myPlugins = [
+  reactKeys(),
+  placeholderPlugin("Write something..."),
+  history(),
+  collab(),
+  keymap({...baseKeymap, "Mod-z": undo, "Mod-Shift-z": redo}),
+];
+
 export default function Editor() {
   const { selectedDocument, updateDocument } = useDocumentContext();
   const [editorState, setEditorState] = useState(
     EditorState.create({ 
       schema: mySchema, 
-      plugins: [
-        reactKeys(),
-        placeholderPlugin("Write something..."),
-        keymap(baseKeymap),
-      ],
+      plugins: myPlugins,
     })
   );
 
@@ -42,11 +48,7 @@ export default function Editor() {
         // Create a new state with the document content
         const newState = EditorState.create({
           schema: mySchema,
-          plugins: [
-            reactKeys(),
-            placeholderPlugin("Write something..."),
-            keymap(baseKeymap),
-          ],
+          plugins: myPlugins,
           doc: selectedDocument.content 
             ? mySchema.nodeFromJSON(JSON.parse(selectedDocument.content))
             : undefined
@@ -58,11 +60,7 @@ export default function Editor() {
         // Create a default state if content cannot be parsed
         const newState = EditorState.create({
           schema: mySchema,
-          plugins: [
-            reactKeys(),
-            placeholderPlugin("Write something..."),
-            keymap(baseKeymap),
-          ]
+          plugins: myPlugins,
         });
         
         setEditorState(newState);
