@@ -40,6 +40,28 @@ services:
     - ./:/app
     command: ["air", "-c", "auth.air.toml"]  
 
+  document-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.document
+    container_name: penfeel-document
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: penfeel
+      DB_SSLMODE: disable
+      GRPC_PORT: 9091
+    ports:
+      - "9091:9091"
+    volumes:
+    - ./:/app
+    command: ["air", "-c", "document.air.toml"]  
+
   api-gateway:
     build:
       context: .
@@ -47,10 +69,13 @@ services:
     container_name: penfeel-api-gateway
     depends_on:
       - auth-service
+      - document-service
     environment:
       SERVER_PORT: 8080
       SERVER_GRPC_PORT: 9090
       AUTH_SERVICE_HOST: auth-service
+      DOCUMENT_SERVICE_HOST: document-service
+      DOCUMENT_SERVICE_PORT: 9091
     ports:
       - "8080:8080"
     volumes:

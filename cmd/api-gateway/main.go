@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -14,7 +15,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/malaxitlmax/penfeel/config"
-	apigateway "github.com/malaxitlmax/penfeel/internal/api-gateway/auth"
+	authGateway "github.com/malaxitlmax/penfeel/internal/api-gateway/auth"
+	documentGateway "github.com/malaxitlmax/penfeel/internal/api-gateway/document"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -39,6 +41,20 @@ func main() {
 		authServiceHost = "localhost"
 	}
 
+	// Получаем хост document-service из переменной окружения или используем localhost по умолчанию
+	documentServiceHost := os.Getenv("DOCUMENT_SERVICE_HOST")
+	if documentServiceHost == "" {
+		documentServiceHost = "localhost"
+	}
+
+	// Получаем порт document-service из переменной окружения или используем стандартный
+	documentServicePort := cfg.Server.GRPCPort
+	if portStr := os.Getenv("DOCUMENT_SERVICE_PORT"); portStr != "" {
+		if port, err := strconv.Atoi(portStr); err == nil {
+			documentServicePort = port
+		}
+	}
+
 	// Устанавливаем соединение с auth service через gRPC
 	authConn, err := grpc.Dial(
 		fmt.Sprintf("%s:%d", authServiceHost, cfg.Server.GRPCPort),
@@ -49,8 +65,19 @@ func main() {
 	}
 	defer authConn.Close()
 
-	// Создаем клиент для auth service
+	// Устанавливаем соединение с document service через gRPC
+	documentConn, err := grpc.Dial(
+		fmt.Sprintf("%s:%d", documentServiceHost, documentServicePort),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("Failed to connect to document service: %v", err)
+	}
+	defer documentConn.Close()
+
+	// Создаем клиенты для сервисов
 	authClient := pb.NewAuthServiceClient(authConn)
+	documentClient := pb.NewDocumentServiceClient(documentConn)
 
 	// Создаем роутер gin
 	router := gin.Default()
@@ -67,8 +94,11 @@ func main() {
 	}
 
 	// Регистрируем маршруты для аутентификации
-	authHandler := apigateway.NewHandler(authClient)
-	authMiddleware := apigateway.AuthMiddleware(authClient)
+	authHandler := authGateway.NewHandler(authClient)
+	authMiddleware := authGateway.AuthMiddleware(authClient)
+
+	// Регистрируем маршруты для документов
+	documentHandler := documentGateway.NewHandler(documentClient)
 
 	// Путь к собранному React-приложению
 	staticPath := "./client/dist"
@@ -80,6 +110,9 @@ func main() {
 		authRoutes.POST("/login", authHandler.Login)
 		authRoutes.POST("/validate", authHandler.ValidateToken)
 	}
+
+	// Регистрируем маршруты для документов с middleware
+	documentHandler.RegisterRoutes(router, authMiddleware)
 
 	// Защищенные маршруты (пример)
 	protectedRoutes := router.Group("/api/v1")

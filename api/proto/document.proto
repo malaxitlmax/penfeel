@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package document;
+option go_package = "github.com/malaxitlmax/penfeel/api/proto";
+
+service DocumentService {
+  rpc GetDocuments(GetDocumentsRequest) returns (GetDocumentsResponse);
+  rpc GetDocument(GetDocumentRequest) returns (GetDocumentResponse);
+  rpc CreateDocument(CreateDocumentRequest) returns (CreateDocumentResponse);
+  rpc UpdateDocument(UpdateDocumentRequest) returns (UpdateDocumentResponse);
+  rpc DeleteDocument(DeleteDocumentRequest) returns (DeleteDocumentResponse);
+}
+
+message Document {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+  string user_id = 4;
+  string created_at = 5;
+  string updated_at = 6;
+}
+
+message GetDocumentsRequest {
+  string user_id = 1;
+}
+
+message GetDocumentsResponse {
+  repeated Document documents = 1;
+  bool success = 2;
+  string error = 3;
+}
+
+message GetDocumentRequest {
+  string id = 1;
+  string user_id = 2;
+}
+
+message GetDocumentResponse {
+  Document document = 1;
+  bool success = 2;
+  string error = 3;
+}
+
+message CreateDocumentRequest {
+  string title = 1;
+  string content = 2;
+  string user_id = 3;
+}
+
+message CreateDocumentResponse {
+  Document document = 1;
+  bool success = 2;
+  string error = 3;
+}
+
+message UpdateDocumentRequest {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+  string user_id = 4;
+}
+
+message UpdateDocumentResponse {
+  Document document = 1;
+  bool success = 2;
+  string error = 3;
+}
+
+message DeleteDocumentRequest {
+  string id = 1;
+  string user_id = 2;
+}
+
+message DeleteDocumentResponse {
+  bool success = 1;
+  string error = 2;
+} 

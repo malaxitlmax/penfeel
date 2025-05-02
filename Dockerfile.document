@@ -1,0 +1,7 @@
+FROM ghcr.io/malaxitlmax/penfeel:penfeel-base
+
+# Указываем порт для gRPC
+EXPOSE 9091
+
+# Запускаем приложение
+CMD ["air", "-c", "document.air.toml"] 

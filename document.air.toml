@@ -1,0 +1,10 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o bin/document cmd/document"
+bin = "bin/document"
+delay = 1000
+exclude_dir = ["tmp", "vendor", "client"]
+include_ext = ["go", "tpl", "tmpl", "html"]
+exclude_regex = ["_test\\.go"] 
