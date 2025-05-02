@@ -1,17 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FiPlus, FiFile, FiAlertCircle } from 'react-icons/fi';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_URL } from '@/App';
-
-// Document interface to match our API
-interface Document {
-    id: string;
-    title: string;
-    content: string;
-    user_id: string;
-    created_at: string;
-    updated_at: string;
-}
+import { useDocumentContext, Document } from '@/context/DocumentContext';
 
 // Error interface to capture detailed backend errors
 interface DetailedError {
@@ -23,6 +14,14 @@ interface DetailedError {
 function DocumentsList() {
     const [error, setError] = useState<DetailedError | null>(null);
     const queryClient = useQueryClient();
+    const { documents, isLoading, error: contextError, selectedDocument, selectDocument } = useDocumentContext();
+
+    // Update error state when context errors occur
+    useEffect(() => {
+        if (contextError) {
+            setError({ message: contextError.message });
+        }
+    }, [contextError]);
 
     // Helper to extract detailed error from API response
     const extractErrorDetails = async (response: Response, defaultMsg: string): Promise<DetailedError> => {
@@ -40,50 +39,6 @@ function DocumentsList() {
             };
         }
     };
-
-    // Fetch documents query
-    const { data, isLoading, error: queryError } = useQuery<Document[]>({
-        queryKey: ['documents'],
-        queryFn: async () => {
-            const token = localStorage.getItem('token');
-            
-            const response = await fetch(`${API_URL}/documents`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (!response.ok) {
-                // If response is 404, we want to handle it gracefully without retrying
-                if (response.status === 404) {
-                    return [];
-                }
-                
-                // For other errors, get detailed error message
-                const error = await extractErrorDetails(response, 'Failed to fetch documents');
-                throw new Error(error.message);
-            }
-            
-            const result = await response.json();
-            return result.documents || [];
-        },
-        // Don't retry on 404 responses
-        retry: (failureCount, error) => {
-            // If the error message includes 404, don't retry
-            if (error instanceof Error && error.message.includes('404')) {
-                return false;
-            }
-            // Otherwise retry a few times (default behavior)
-            return failureCount < 3;
-        }
-    });
-
-    // Update error state when query errors occur
-    useEffect(() => {
-        if (queryError) {
-            setError({ message: queryError.message });
-        }
-    }, [queryError]);
 
     // Create document mutation
     const createDocumentMutation = useMutation({
@@ -130,6 +85,10 @@ function DocumentsList() {
         createDocumentMutation.mutate();
     };
 
+    const handleSelectDocument = (docId: string) => {
+        selectDocument(docId);
+    };
+
     return (
         <div className="w-64 border-r border-gray-200 bg-gray-50 overflow-y-auto">
             <div className="p-4">
@@ -158,16 +117,17 @@ function DocumentsList() {
                             <div className="text-xs text-red-400 ml-5">{error.details}</div>
                         )}
                     </div>
-                ) : !data || data.length === 0 ? (
+                ) : !documents || documents.length === 0 ? (
                     <div className="text-gray-500 text-sm py-2">
                         No documents found. Create your first document!
                     </div>
                 ) : (
                     <div className="space-y-2">
-                        {data.map((doc: Document) => (
+                        {documents.map((doc: Document) => (
                             <div 
                                 key={doc.id}
-                                className="flex items-center p-2 rounded-md hover:bg-gray-200 cursor-pointer"
+                                className={`flex items-center p-2 rounded-md hover:bg-gray-200 cursor-pointer ${selectedDocument?.id === doc.id ? 'bg-gray-200' : ''}`}
+                                onClick={() => handleSelectDocument(doc.id)}
                             >
                                 <FiFile className="mr-2 text-gray-600" />
                                 <span className="text-gray-700">{doc.title}</span>
