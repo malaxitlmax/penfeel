@@ -1,7 +1,5 @@
 import { EditorView } from "prosemirror-view";
 import { useEditorEventCallback } from "@handlewithcare/react-prosemirror";
-import { toggleMark, wrapIn, setBlockType } from "prosemirror-commands";
-import { wrapInList } from "prosemirror-schema-list";
 import { EditorState, Transaction } from "prosemirror-state";
 import "./ToolbarStyle.css";
 
