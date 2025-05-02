@@ -55,14 +55,16 @@ func main() {
 	// Создаем роутер gin
 	router := gin.Default()
 
-	// Configure CORS middleware
-	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowAllOrigins = true // For development; restrict in production
-	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
-	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
-	corsConfig.ExposeHeaders = []string{"Content-Length"}
-	corsConfig.AllowCredentials = true
-	router.Use(cors.New(corsConfig))
+	if isDev {
+		// Configure CORS middleware
+		corsConfig := cors.DefaultConfig()
+		corsConfig.AllowAllOrigins = true // For development; restrict in production
+		corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"}
+		corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+		corsConfig.ExposeHeaders = []string{"Content-Length"}
+		corsConfig.AllowCredentials = true
+		router.Use(cors.New(corsConfig))
+	}
 
 	// Регистрируем маршруты для аутентификации
 	authHandler := apigateway.NewHandler(authClient)

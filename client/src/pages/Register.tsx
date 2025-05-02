@@ -39,20 +39,57 @@ export default function Register() {
         password: credentials.password,
       };
 
-      const response = await fetch(API_URL + '/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(registrationData),
-      });
+      try {
+        const response = await fetch(API_URL + '/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(registrationData),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Registration failed');
+        if (!response.ok) {
+          // Handle different HTTP error status codes
+          if (response.status === 409) {
+            throw new Error('An account with this email already exists.');
+          } else if (response.status === 400) {
+            // Try to get validation errors
+            try {
+              const errorData = await response.json();
+              // Check if there are specific field validation errors
+              if (errorData.errors) {
+                const errorMessages = Object.values(errorData.errors).join('. ');
+                throw new Error(errorMessages || 'Invalid registration information provided.');
+              }
+              throw new Error(errorData.message || 'Registration failed due to invalid data.');
+            } catch {
+              throw new Error('Registration failed due to invalid data.');
+            }
+          } else if (response.status === 429) {
+            throw new Error('Too many registration attempts. Please try again later.');
+          }
+
+          // Try to get detailed error message from response
+          try {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Registration failed with status: ${response.status}`);
+          } catch {
+            // If parsing JSON fails, use status text
+            throw new Error(`Registration failed: ${response.statusText || response.status}`);
+          }
+        }
+
+        return response.json();
+      } catch (error) {
+        // Handle network errors and other exceptions
+        if (error instanceof TypeError && error.message === 'Failed to fetch') {
+          throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
+        } else if (error instanceof Error) {
+          throw error; // Re-throw if it's already an Error object with message
+        } else {
+          throw new Error('An unexpected error occurred. Please try again later.');
+        }
       }
-
-      return response.json();
     },
     onSuccess: () => {
       // Redirect to login page after successful registration

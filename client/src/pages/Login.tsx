@@ -23,20 +23,46 @@ export default function Login() {
 
   const loginMutation = useMutation<LoginResponse, Error, LoginCredentials>({
     mutationFn: async (credentials) => {
-      const response = await fetch(API_URL + '/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
+      try {
+        const response = await fetch(API_URL + '/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(credentials),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Login failed');
+        if (!response.ok) {
+          // Handle different HTTP error status codes
+          if (response.status === 401) {
+            throw new Error('Invalid email or password. Please try again.');
+          } else if (response.status === 404) {
+            throw new Error('Account not found with this email address.');
+          } else if (response.status === 429) {
+            throw new Error('Too many login attempts. Please try again later.');
+          }
+
+          // Try to get detailed error message from response
+          try {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Login failed with status: ${response.status}`);
+          } catch {
+            // If parsing JSON fails, use status text
+            throw new Error(`Login failed: ${response.statusText || response.status}`);
+          }
+        }
+
+        return response.json();
+      } catch (error) {
+        // Handle network errors and other exceptions
+        if (error instanceof TypeError && error.message === 'Failed to fetch') {
+          throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
+        } else if (error instanceof Error) {
+          throw error; // Re-throw if it's already an Error object with message
+        } else {
+          throw new Error('An unexpected error occurred. Please try again later.');
+        }
       }
-
-      return response.json();
     },
     onSuccess: (data) => {
       // Store token in localStorage
