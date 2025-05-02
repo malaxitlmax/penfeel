@@ -1,0 +1,19 @@
+# Database connection string (without credentials for security)
+# Override this with environment variables
+database: "postgres://postgres:postgres@localhost:5432/penfeel?sslmode=disable"
+
+# Path to migration files
+migrations: "./migrations"
+
+# Table name for storing migration records
+table_name: "public.schema_migrations"
+
+# Schema dump configuration
+schema:
+  # The schema to dump
+  name: "public"
+  # Output file for schema dump
+  file: "./schema.sql"
+  # Tables whose data should be included in the dump (useful for reference tables)
+  data:
+    - name: "%_enum" # Wildcard pattern for tables ending with _enum 

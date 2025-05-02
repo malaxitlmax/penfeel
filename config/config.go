@@ -8,9 +8,10 @@ import (
 
 // Config структура для хранения конфигурации приложения
 type Config struct {
-	Database DatabaseConfig
-	JWT      JWTConfig
-	Server   ServerConfig
+	Database  DatabaseConfig
+	JWT       JWTConfig
+	Server    ServerConfig
+	Migration MigrationConfig
 }
 
 // DatabaseConfig конфигурация базы данных
@@ -40,6 +41,14 @@ type ServerConfig struct {
 	IdleTimeout  time.Duration
 }
 
+// MigrationConfig конфигурация миграций
+type MigrationConfig struct {
+	Path             string
+	Enabled          bool
+	LockTimeout      int
+	StatementTimeout int
+}
+
 // LoadConfig загружает конфигурацию из переменных окружения
 func LoadConfig() *Config {
 	return &Config{
@@ -64,6 +73,12 @@ func LoadConfig() *Config {
 			WriteTimeout: time.Duration(getEnvAsInt("SERVER_WRITE_TIMEOUT", 10)) * time.Second,
 			IdleTimeout:  time.Duration(getEnvAsInt("SERVER_IDLE_TIMEOUT", 60)) * time.Second,
 		},
+		Migration: MigrationConfig{
+			Path:             getEnv("MIGRATION_PATH", "./migrations"),
+			Enabled:          getEnvAsBool("MIGRATION_ENABLED", true),
+			LockTimeout:      getEnvAsInt("MIGRATION_LOCK_TIMEOUT", 5000),
+			StatementTimeout: getEnvAsInt("MIGRATION_STATEMENT_TIMEOUT", 60000),
+		},
 	}
 }
 
@@ -78,6 +93,15 @@ func getEnv(key, defaultValue string) string {
 func getEnvAsInt(key string, defaultValue int) int {
 	if valueStr, exists := os.LookupEnv(key); exists {
 		if value, err := strconv.Atoi(valueStr); err == nil {
+			return value
+		}
+	}
+	return defaultValue
+}
+
+func getEnvAsBool(key string, defaultValue bool) bool {
+	if valueStr, exists := os.LookupEnv(key); exists {
+		if value, err := strconv.ParseBool(valueStr); err == nil {
 			return value
 		}
 	}

@@ -24,7 +24,16 @@ func main() {
 	cfg := config.LoadConfig()
 
 	// Подключаемся к базе данных
-	db, err := database.NewPostgresDB(cfg.Database)
+	migrationPath := ""
+	if cfg.Migration.Enabled {
+		migrationPath = cfg.Migration.Path
+	}
+
+	db, err := database.NewPostgresDBWithMigrations(
+		cfg.Database,
+		migrationPath,
+	)
+
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}

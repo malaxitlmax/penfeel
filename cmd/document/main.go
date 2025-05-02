@@ -8,12 +8,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	pb "github.com/malaxitlmax/penfeel/api/proto"
 	"github.com/malaxitlmax/penfeel/config"
 	"github.com/malaxitlmax/penfeel/internal/document"
+	"github.com/malaxitlmax/penfeel/pkg/database"
 	"google.golang.org/grpc"
 )
 
@@ -29,12 +29,17 @@ func main() {
 	// Загружаем конфигурацию
 	cfg := config.LoadConfig()
 
-	// Подключаемся к базе данных
-	dbURL := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Database.Host, cfg.Database.Port, cfg.Database.User,
-		cfg.Database.Password, cfg.Database.DBName, cfg.Database.SSLMode)
+	// Подключаемся к базе данных с запуском миграций
+	migrationPath := ""
+	if cfg.Migration.Enabled {
+		migrationPath = cfg.Migration.Path
+	}
 
-	db, err := sqlx.Connect("postgres", dbURL)
+	db, err := database.NewPostgresDBWithMigrations(
+		cfg.Database,
+		migrationPath,
+	)
+
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}

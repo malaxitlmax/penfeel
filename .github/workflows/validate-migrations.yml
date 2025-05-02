@@ -1,0 +1,79 @@
+name: Validate Migrations
+
+on:
+  pull_request:
+    paths:
+      - 'migrations/**'
+      - '.github/workflows/validate-migrations.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'migrations/**'
+      - '.github/workflows/validate-migrations.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: penfeel
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.20'
+
+      - name: Install migrate
+        run: |
+          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-amd64.tar.gz | tar xvz
+          sudo mv migrate /usr/local/bin/
+          which migrate
+
+      - name: Validate migrations
+        run: |
+          migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/penfeel?sslmode=disable" up
+          echo "Migrations applied successfully to test database"
+
+      - name: Dump schema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          pg_dump --schema-only --no-owner --no-acl -d "postgres://postgres:postgres@localhost:5432/penfeel?sslmode=disable" -f schema.sql
+          echo "Schema dumped to schema.sql"
+
+      - name: Verify schema diff
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin main:main
+          # Check if schema.sql exists in the main branch
+          if git ls-tree -r main --name-only | grep -q "^schema.sql$"; then
+            git checkout main -- schema.sql
+            mv schema.sql schema.main.sql
+            git checkout ${{ github.sha }} -- schema.sql
+            echo "Schema differences from main branch:"
+            diff -u schema.main.sql schema.sql || true
+          else
+            echo "No schema.sql in main branch, skipping diff"
+          fi
+
+      - name: Save schema artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: schema-sql
+          path: schema.sql 

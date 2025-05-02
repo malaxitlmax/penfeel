@@ -16,6 +16,29 @@ services:
       timeout: 5s
       retries: 5
 
+  migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+    container_name: penfeel-migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: penfeel
+      DB_SSLMODE: disable
+      MIGRATION_ENABLED: "true"
+      MIGRATION_PATH: "/app/migrations"
+    volumes:
+      - ./:/app
+    command: ["./scripts/run_migrations.sh"]
+    profiles:
+      - manual
+
   auth-service:
     build:
       context: .
@@ -34,6 +57,8 @@ services:
       GRPC_PORT: 9090
       JWT_SECRET: "your-auth-secret-key-change-in-production"
       JWT_REFRESH_SECRET: "your-refresh-secret-key-change-in-production"
+      MIGRATION_ENABLED: "true"
+      MIGRATION_PATH: "/app/migrations"
     ports:
       - "9090:9090"
     volumes:
@@ -56,6 +81,8 @@ services:
       DB_NAME: penfeel
       DB_SSLMODE: disable
       GRPC_PORT: 9091
+      MIGRATION_ENABLED: "true"
+      MIGRATION_PATH: "/app/migrations"
     ports:
       - "9091:9091"
     volumes:
@@ -76,6 +103,7 @@ services:
       AUTH_SERVICE_HOST: auth-service
       DOCUMENT_SERVICE_HOST: document-service
       DOCUMENT_SERVICE_PORT: 9091
+      ENV: dev
     ports:
       - "8080:8080"
     volumes:
