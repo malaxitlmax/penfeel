@@ -1,7 +1,7 @@
 /* Minimalist styling for ProseMirror editor */
 
 .editor-container {
-  max-width: 700px;
+  max-width: 95%;
   margin: 0 auto;
 }
 
