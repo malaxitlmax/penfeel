@@ -111,25 +111,16 @@ func main() {
 		authRoutes.POST("/validate", authHandler.ValidateToken)
 	}
 
-	// Регистрируем маршруты для документов с middleware
-	documentHandler.RegisterRoutes(router, authMiddleware)
-
 	// Защищенные маршруты (пример)
 	protectedRoutes := router.Group("/api/v1")
 	protectedRoutes.Use(authMiddleware)
 	{
 		// Пример защищенного маршрута
-		protectedRoutes.GET("/user-info", func(c *gin.Context) {
-			userId := c.GetString("user_id")
-			username := c.GetString("username")
-			email := c.GetString("email")
-
-			c.JSON(http.StatusOK, gin.H{
-				"user_id":  userId,
-				"username": username,
-				"email":    email,
-			})
-		})
+		protectedRoutes.GET("documents", documentHandler.GetDocuments)
+		protectedRoutes.GET("documents/:id", documentHandler.GetDocument)
+		protectedRoutes.POST("documents", documentHandler.CreateDocument)
+		protectedRoutes.PUT("documents/:id", documentHandler.UpdateDocument)
+		protectedRoutes.DELETE("documents/:id", documentHandler.DeleteDocument)
 	}
 
 	// TODO: включать на проде

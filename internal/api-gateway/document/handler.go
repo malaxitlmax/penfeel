@@ -6,19 +6,28 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	pb "github.com/malaxitlmax/penfeel/api/proto"
 	"golang.org/x/net/context"
 )
 
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true // Или реализуйте более строгую проверку происхождения
+	},
+}
+
 // Handler структура обработчика документов
 type Handler struct {
 	documentClient pb.DocumentServiceClient
+	wsService      *WebSocketService
 }
 
 // NewHandler создает новый обработчик документов
 func NewHandler(documentClient pb.DocumentServiceClient) *Handler {
 	return &Handler{
 		documentClient: documentClient,
+		wsService:      NewWebSocketService(documentClient),
 	}
 }
 
@@ -136,10 +145,15 @@ func (h *Handler) GetDocument(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success":  true,
-		"document": res.Document,
-	})
+	// Только после успешного получения документа апгрейдим соединение до WebSocket
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upgrade to WebSocket", "details": err.Error()})
+		return
+	}
+
+	// Передаем управление соединением в сервис WebSocket
+	h.wsService.HandleWebSocketConnection(documentID, userID, conn, res.Document)
 }
 
 // CreateDocumentRequest структура запроса на создание документа
@@ -273,6 +287,11 @@ func (h *Handler) UpdateDocument(c *gin.Context) {
 		return
 	}
 
+	// Если есть активные WebSocket соединения для этого документа, уведомляем их об обновлении
+	if h.wsService.GetActiveConnections(documentID) > 0 {
+		h.wsService.NotifyDocumentUpdated(documentID, userID, res.Document)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success":  true,
 		"document": res.Document,
@@ -293,6 +312,9 @@ func (h *Handler) DeleteDocument(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required", "details": "Valid authentication token is required"})
 		return
 	}
+
+	// Проверяем, есть ли активные соединения с этим документом
+	hasActiveConnections := h.wsService.GetActiveConnections(documentID) > 0
 
 	// Отправляем запрос к document-сервису через gRPC
 	res, err := h.documentClient.DeleteDocument(context.Background(), &pb.DeleteDocumentRequest{
@@ -331,20 +353,13 @@ func (h *Handler) DeleteDocument(c *gin.Context) {
 		return
 	}
 
+	// Если есть активные соединения, отправляем уведомление об удалении документа
+	if hasActiveConnections {
+		h.wsService.NotifyDocumentDeleted(documentID, userID)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Document successfully deleted",
 	})
-}
-
-// RegisterRoutes регистрирует маршруты для документов
-func (h *Handler) RegisterRoutes(r *gin.Engine, middleware ...gin.HandlerFunc) {
-	documents := r.Group("/api/v1/documents")
-	documents.Use(middleware...)
-
-	documents.GET("", h.GetDocuments)
-	documents.GET("/:id", h.GetDocument)
-	documents.POST("", h.CreateDocument)
-	documents.PUT("/:id", h.UpdateDocument)
-	documents.DELETE("/:id", h.DeleteDocument)
 }
