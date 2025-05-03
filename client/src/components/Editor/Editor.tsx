@@ -29,7 +29,11 @@ const myPlugins = [
   placeholderPlugin("Write something..."),
   history(),
   collab(),
-  keymap({...baseKeymap, "Mod-z": undo, "Mod-Shift-z": redo}),
+  keymap({
+    ...baseKeymap,
+    "Mod-z": undo,
+    "Mod-Shift-z": redo,
+  }),
 ];
 
 export default function Editor() {
