@@ -1,4 +1,4 @@
-package auth
+package handler
 
 import (
 	"net/http"
@@ -8,14 +8,14 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Handler структура обработчика авторизации
-type Handler struct {
+// AuthHandler структура обработчика авторизации
+type AuthHandler struct {
 	authClient pb.AuthServiceClient
 }
 
-// NewHandler создает новый обработчик авторизации
-func NewHandler(authClient pb.AuthServiceClient) *Handler {
-	return &Handler{
+// NewAuthHandler создает новый обработчик авторизации
+func NewAuthHandler(authClient pb.AuthServiceClient) *AuthHandler {
+	return &AuthHandler{
 		authClient: authClient,
 	}
 }
@@ -39,7 +39,7 @@ type TokenRequest struct {
 }
 
 // Register обрабатывает запрос на регистрацию
-func (h *Handler) Register(c *gin.Context) {
+func (h *AuthHandler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -70,7 +70,7 @@ func (h *Handler) Register(c *gin.Context) {
 }
 
 // Login обрабатывает запрос на вход
-func (h *Handler) Login(c *gin.Context) {
+func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -105,7 +105,7 @@ func (h *Handler) Login(c *gin.Context) {
 }
 
 // ValidateToken обрабатывает запрос на валидацию токена
-func (h *Handler) ValidateToken(c *gin.Context) {
+func (h *AuthHandler) ValidateToken(c *gin.Context) {
 	var req TokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

@@ -1,4 +1,4 @@
-package document
+package handler
 
 import (
 	"net/http"
@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	pb "github.com/malaxitlmax/penfeel/api/proto"
+	"github.com/malaxitlmax/penfeel/internal/api-gateway/service"
 	"golang.org/x/net/context"
 )
 
@@ -17,17 +18,17 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-// Handler структура обработчика документов
-type Handler struct {
+// DocumentHandler структура обработчика документов
+type DocumentHandler struct {
 	documentClient pb.DocumentServiceClient
-	wsService      *WebSocketService
+	wsService      *service.WebSocketService
 }
 
-// NewHandler создает новый обработчик документов
-func NewHandler(documentClient pb.DocumentServiceClient) *Handler {
-	return &Handler{
+// NewDocumentHandler создает новый обработчик документов
+func NewDocumentHandler(documentClient pb.DocumentServiceClient) *DocumentHandler {
+	return &DocumentHandler{
 		documentClient: documentClient,
-		wsService:      NewWebSocketService(documentClient),
+		wsService:      service.NewWebSocketService(documentClient),
 	}
 }
 
@@ -37,7 +38,7 @@ type GetDocumentsRequest struct {
 }
 
 // GetDocuments обрабатывает запрос на получение списка документов
-func (h *Handler) GetDocuments(c *gin.Context) {
+func (h *DocumentHandler) GetDocuments(c *gin.Context) {
 	var req GetDocumentsRequest
 
 	// Получаем ID пользователя из запроса или из токена
@@ -93,7 +94,7 @@ func (h *Handler) GetDocuments(c *gin.Context) {
 }
 
 // GetDocument обрабатывает запрос на получение документа
-func (h *Handler) GetDocument(c *gin.Context) {
+func (h *DocumentHandler) GetDocument(c *gin.Context) {
 	documentID := c.Param("id")
 	if documentID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing document ID", "details": "Document ID is required in the path"})
@@ -163,7 +164,7 @@ type CreateDocumentRequest struct {
 }
 
 // CreateDocument обрабатывает запрос на создание документа
-func (h *Handler) CreateDocument(c *gin.Context) {
+func (h *DocumentHandler) CreateDocument(c *gin.Context) {
 	var req CreateDocumentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data: " + err.Error()})
@@ -228,7 +229,7 @@ type UpdateDocumentRequest struct {
 }
 
 // UpdateDocument обрабатывает запрос на обновление документа
-func (h *Handler) UpdateDocument(c *gin.Context) {
+func (h *DocumentHandler) UpdateDocument(c *gin.Context) {
 	documentID := c.Param("id")
 	if documentID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing document ID", "details": "Document ID is required in the path"})
@@ -299,7 +300,7 @@ func (h *Handler) UpdateDocument(c *gin.Context) {
 }
 
 // DeleteDocument обрабатывает запрос на удаление документа
-func (h *Handler) DeleteDocument(c *gin.Context) {
+func (h *DocumentHandler) DeleteDocument(c *gin.Context) {
 	documentID := c.Param("id")
 	if documentID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing document ID", "details": "Document ID is required in the path"})
