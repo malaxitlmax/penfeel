@@ -89,11 +89,11 @@ services:
     - ./:/app
     command: ["air", "-c", "document.air.toml"]  
 
-  api-gateway:
+  api:
     build:
       context: .
-      dockerfile: Dockerfile.api-gateway
-    container_name: penfeel-api-gateway
+      dockerfile: Dockerfile.api
+    container_name: penfeel-api
     depends_on:
       - auth-service
       - document-service
@@ -108,6 +108,6 @@ services:
       - "8080:8080"
     volumes:
       - ./:/app
-    command: ["air", "-c", "api-gateway.air.toml"]      
+    command: ["air", "-c", "api.air.toml"]      
 volumes:
   postgres_data: 

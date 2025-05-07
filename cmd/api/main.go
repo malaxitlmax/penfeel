@@ -15,8 +15,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/malaxitlmax/penfeel/config"
-	"github.com/malaxitlmax/penfeel/internal/api-gateway/handler"
-	"github.com/malaxitlmax/penfeel/internal/api-gateway/middleware"
+	"github.com/malaxitlmax/penfeel/internal/api/handler"
+	"github.com/malaxitlmax/penfeel/internal/api/middleware"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 

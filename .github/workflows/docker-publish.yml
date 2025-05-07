@@ -159,7 +159,7 @@ jobs:
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
-  build-api-gateway:
+  build-api:
     needs: build-base
     runs-on: ubuntu-latest
     permissions:
@@ -194,18 +194,18 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch,suffix=-api-gateway
-            type=ref,event=pr,suffix=-api-gateway
-            type=semver,pattern={{version}},suffix=-api-gateway
-            type=semver,pattern={{major}}.{{minor}},suffix=-api-gateway
-            type=raw,value=api-gateway
+            type=ref,event=branch,suffix=-api
+            type=ref,event=pr,suffix=-api
+            type=semver,pattern={{version}},suffix=-api
+            type=semver,pattern={{major}}.{{minor}},suffix=-api
+            type=raw,value=api
 
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
         with:
           context: .
-          file: Dockerfile.api-gateway
+          file: Dockerfile.api
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

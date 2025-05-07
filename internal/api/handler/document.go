@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	pb "github.com/malaxitlmax/penfeel/api/proto"
-	"github.com/malaxitlmax/penfeel/internal/api-gateway/service"
+	"github.com/malaxitlmax/penfeel/internal/api/service"
 	"golang.org/x/net/context"
 )
 

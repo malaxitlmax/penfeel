@@ -14,4 +14,4 @@ echo "React app built successfully!"
 # Запуск API Gateway
 echo "Starting API Gateway..."
 cd ..
-go run cmd/api-gateway/main.go 
+go run cmd/api/main.go 

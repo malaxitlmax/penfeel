@@ -1,4 +1,4 @@
-.PHONY: proto run-auth run-api-gateway migrate build up down migration-new migration-up migration-down migration-status migration-plan dump-schema
+.PHONY: proto run-auth run-api migrate build up down migration-new migration-up migration-down migration-status migration-plan dump-schema
 
 # Генерация proto файлов
 proto:
@@ -8,9 +8,9 @@ proto:
 run-auth: build
 	./bin/auth-service
 
-# Запуск API Gateway
-run-api-gateway: build
-	./bin/api-gateway
+# Запуск API
+run-api: build
+	./bin/api
 
 # Запуск миграций (legacy)
 migrate:
@@ -80,10 +80,10 @@ install-dev-deps:
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest 
 
 npm-install:
-	docker exec -it penfeel-api-gateway sh -c "cd client && npm install"
+	docker exec -it penfeel-api sh -c "cd client && npm install"
 
 npm-build:
-	docker exec -it penfeel-api-gateway sh -c "cd client && npm run build"
+	docker exec -it penfeel-api sh -c "cd client && npm run build"
 
 build-base:
 	docker build -t penfeel-base -f Dockerfile.base .

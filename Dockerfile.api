@@ -4,4 +4,4 @@ FROM ghcr.io/malaxitlmax/penfeel:penfeel-base
 EXPOSE 8080
 
 # Запускаем приложение
-CMD ["air", "-c", "api-gateway.air.toml"]
+CMD ["air", "-c", "api.air.toml"]
