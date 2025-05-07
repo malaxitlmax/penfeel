@@ -15,8 +15,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/malaxitlmax/penfeel/config"
-	authGateway "github.com/malaxitlmax/penfeel/internal/api-gateway/auth"
-	documentGateway "github.com/malaxitlmax/penfeel/internal/api-gateway/document"
+	"github.com/malaxitlmax/penfeel/internal/api-gateway/handler"
+	"github.com/malaxitlmax/penfeel/internal/api-gateway/middleware"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -94,11 +94,11 @@ func main() {
 	}
 
 	// Регистрируем маршруты для аутентификации
-	authHandler := authGateway.NewHandler(authClient)
-	authMiddleware := authGateway.AuthMiddleware(authClient)
+	authHandler := handler.NewAuthHandler(authClient)
+	authMiddleware := middleware.AuthMiddleware(authClient)
 
 	// Регистрируем маршруты для документов
-	documentHandler := documentGateway.NewHandler(documentClient)
+	documentHandler := handler.NewDocumentHandler(documentClient)
 
 	// Путь к собранному React-приложению
 	staticPath := "./client/dist"
